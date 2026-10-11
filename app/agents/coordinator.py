@@ -353,7 +353,8 @@ class CoordinatorAgent:
         )
         mixed_intent = has_schedule_intent and faq_intent and " e " in normalized
         route_error: str | None = None
-        if self.mode in {"live", "local"}:
+        route_fallback = False
+        if self.mode == "live":
             try:
                 async with asyncio.timeout(deadline.remaining()):
                     is_schedule, is_faq = await self._route_with_model(message)
@@ -367,6 +368,18 @@ class CoordinatorAgent:
                 route_error = f"{type(exc).__name__}:{str(exc)[:100]}"
             else:
                 route_fallback = False
+        elif self.mode == "local":
+            # Keep local specialist selection deterministic and read-only; use
+            # catalog and policy signals instead of trusting free-form routing.
+            is_schedule = has_schedule_intent and (not faq_intent or mixed_intent)
+            is_faq = (
+                not is_schedule
+                or faq_intent
+                or any(
+                    word in normalized
+                    for word in ("inscrição", "acessibilidade", "alimentação", "cancelar")
+                )
+            )
         else:
             is_schedule = has_schedule_intent and (not faq_intent or mixed_intent)
             is_faq = (

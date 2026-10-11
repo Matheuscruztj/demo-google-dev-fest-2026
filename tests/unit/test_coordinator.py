@@ -45,7 +45,14 @@ async def test_multi_coordinator_uses_configured_model_router(sessions, provider
         api_key="test-key",
         use_mcp=False,
     )
-    monkeypatch.setattr(agent, "_route_with_model", route)
+    if provider == "live":
+        monkeypatch.setattr(agent, "_route_with_model", route)
+    else:
+
+        async def fail_if_route_called(message):
+            raise AssertionError("intenção local explícita deve usar roteamento determinístico")
+
+        monkeypatch.setattr(agent, "_route_with_model", fail_if_route_called)
     result = await agent.ask("Palestras de IA")
     assert result.error is None
     assert result.mode == f"{provider}:multi"

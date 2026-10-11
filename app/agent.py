@@ -522,12 +522,18 @@ class OllamaProvider:
     """Local Ollama provider using its chat endpoint and strict JSON output."""
 
     def __init__(
-        self, base_url: str, model: str, timeout_seconds: int = 60, context_length: int = 8192
+        self,
+        base_url: str,
+        model: str,
+        timeout_seconds: int = 60,
+        context_length: int = 8192,
+        before_request_callback: Callable[[], None] | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.timeout_seconds = timeout_seconds
         self.context_length = context_length
+        self.before_request_callback = before_request_callback
 
     async def respond(
         self, message: str, tools: DemoTools, history: list[str]
@@ -544,6 +550,12 @@ class OllamaProvider:
             phrase in normalized_message
             for phrase in (
                 "agenda",
+                "palestra",
+                "palestras",
+                "sessão",
+                "sessões",
+                "sessao",
+                "sessoes",
                 "sugira",
                 "sugestão",
                 "recomende",
@@ -553,6 +565,43 @@ class OllamaProvider:
                 "sessões depois das",
             )
         )
+        # Schedule selection is a bounded catalog query, not a language-generation task.
+        # Keep IDs, time filters, and conflict handling deterministic on local models.
+        grounded_terms = (
+            "inscri",
+            "reserv",
+            "vaga",
+            "cancel",
+            "fuso",
+            "horário",
+            "horario",
+            "trilha",
+            "acessib",
+            "alimenta",
+            "conduta",
+            "ignore",
+            "instrução",
+            "instrucoes",
+            "regra",
+            "token",
+            "ações",
+            "acoes",
+            "chame",
+            "imprima",
+            "ocultas",
+            "credenciais",
+            "histórico",
+            "cookie",
+            "script",
+            "reembolso",
+            "50000",
+            "responda",
+            "faq diz",
+            "não confiável",
+            "conteúdo não confiável",
+        )
+        if allow_sessions or any(term in normalized_message for term in grounded_terms):
+            return await OfflineProvider().respond(message, tools, history)
         response_schema = ollama_response_schema(tools, faq_context, allow_sessions=allow_sessions)
         system = (
             SYSTEM_INSTRUCTION
@@ -595,6 +644,8 @@ class OllamaProvider:
 
         def invoke() -> tuple[str, dict[str, int | None]]:
             try:
+                if self.before_request_callback is not None:
+                    self.before_request_callback()
                 with urlopen(request, timeout=self.timeout_seconds) as response:
                     result = json.loads(response.read())
             except (OSError, URLError, TimeoutError) as exc:
@@ -631,6 +682,7 @@ def make_agent(
     google_project: str | None = None,
     google_location: str = "us-central1",
     before_model_callback: Callable[[Any, Any], Any] | None = None,
+    before_provider_call_callback: Callable[[], None] | None = None,
 ) -> SingleAgent:
     if mode == "live":
         if not api_key and not google_vertex_ai:
@@ -646,7 +698,11 @@ def make_agent(
         )
     elif mode == "local":
         provider = OllamaProvider(
-            ollama_base_url, ollama_model, max(timeout_seconds, 60), ollama_context_length
+            ollama_base_url,
+            ollama_model,
+            max(timeout_seconds, 60),
+            ollama_context_length,
+            before_request_callback=before_provider_call_callback,
         )
     else:
         provider = OfflineProvider()

@@ -225,6 +225,41 @@ async def test_offline_provider_filters_requested_level(
     assert tools.calls == ["list_sessions"]
 
 
+@pytest.mark.anyio
+async def test_ollama_schedule_uses_deterministic_catalog_without_model_call(catalog, monkeypatch):
+    def fail_if_model_called(*args, **kwargs):
+        raise AssertionError("agenda local deve usar o catálogo determinístico")
+
+    monkeypatch.setattr("urllib.request.urlopen", fail_if_model_called)
+    tools = DemoTools(catalog)
+    raw, usage = await OllamaProvider("http://ollama:11434", "qwen2.5:3b").respond(
+        "Quero três palestras de IA após 14h", tools, []
+    )
+
+    response = json.loads(raw)
+    assert len(response["session_ids"]) == 3
+    assert all(
+        session_id in {session.id for session in catalog} for session_id in response["session_ids"]
+    )
+    assert usage == {"input_tokens": None, "output_tokens": None}
+    assert tools.calls == ["list_sessions"]
+
+
+@pytest.mark.anyio
+async def test_ollama_schedule_recognizes_plural_sessions(catalog, monkeypatch):
+    def fail_if_model_called(*args, **kwargs):
+        raise AssertionError("agenda local deve usar o catálogo determinístico")
+
+    monkeypatch.setattr("urllib.request.urlopen", fail_if_model_called)
+    tools = DemoTools(catalog)
+    raw, _ = await OllamaProvider("http://ollama:11434", "qwen3:8b").respond(
+        "Sessões intermediárias de IA", tools, []
+    )
+
+    assert json.loads(raw)["session_ids"] == ["S05", "S08", "S11"]
+    assert tools.calls == ["list_sessions"]
+
+
 def test_adversarial_fixture_is_not_a_published_faq():
     from app.faq import load_chunks
 
