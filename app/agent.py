@@ -6,6 +6,7 @@ import asyncio
 import json
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Protocol
 from uuid import uuid4
@@ -229,9 +230,11 @@ class ADKProvider:
         vertex_ai: bool = False,
         project: str | None = None,
         location: str = "us-central1",
+        before_model_callback: Callable[[Any, Any], Any] | None = None,
     ) -> None:
         self.api_key, self.model, self.timeout_seconds = api_key, model, timeout_seconds
         self.vertex_ai, self.project, self.location = vertex_ai, project, location
+        self.before_model_callback = before_model_callback
 
     async def respond(
         self, message: str, tools: DemoTools, history: list[str]
@@ -276,7 +279,13 @@ class ADKProvider:
                         location=self.location,
                     ),
                 )
-            agent = build_adk_agent(Agent, types, model_backend, tools)
+            agent = build_adk_agent(
+                Agent,
+                types,
+                model_backend,
+                tools,
+                before_model_callback=self.before_model_callback,
+            )
             session_service = InMemorySessionService()
             runner = Runner(
                 agent=agent,
@@ -621,6 +630,7 @@ def make_agent(
     google_vertex_ai: bool = False,
     google_project: str | None = None,
     google_location: str = "us-central1",
+    before_model_callback: Callable[[Any, Any], Any] | None = None,
 ) -> SingleAgent:
     if mode == "live":
         if not api_key and not google_vertex_ai:
@@ -632,6 +642,7 @@ def make_agent(
             vertex_ai=google_vertex_ai,
             project=google_project,
             location=google_location,
+            before_model_callback=before_model_callback,
         )
     elif mode == "local":
         provider = OllamaProvider(
@@ -649,8 +660,15 @@ def make_agent(
     )
 
 
-def build_adk_agent(agent_class: Any, genai_types: Any, model: Any, tools: DemoTools) -> Any:
-    return agent_class(
+def build_adk_agent(
+    agent_class: Any,
+    genai_types: Any,
+    model: Any,
+    tools: DemoTools,
+    *,
+    before_model_callback: Callable[[Any, Any], Any] | None = None,
+) -> Any:
+    options: dict[str, Any] = dict(
         name="eventops_single_agent",
         model=model,
         description="Guia de evento fictício com ferramentas locais somente de leitura.",
@@ -683,3 +701,6 @@ def build_adk_agent(agent_class: Any, genai_types: Any, model: Any, tools: DemoT
             "required": ["answer", "session_ids", "sources", "reservation_proposal"],
         },
     )
+    if before_model_callback is not None:
+        options["before_model_callback"] = before_model_callback
+    return agent_class(**options)

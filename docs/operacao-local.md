@@ -195,4 +195,12 @@ migração. Consulte o controle de [pendências](pendencias.md).
 
 O chat usa **Agente único** por padrão. O seletor da página também permite **Coordenador + especialistas**, disponível no modo offline. O especialista de agenda usa um servidor MCP local via stdio; o processo é iniciado e encerrado por solicitação. Para inspecionar manualmente o servidor, execute `python -m mcp_server.server` em um terminal: stdout fica reservado ao protocolo MCP e os logs vão para stderr. Instale o extra travado do agente/MCP com `python -m pip install --require-hashes -r requirements/py311-agent.txt`.
 
-`make eval-compare` executa três rodadas pareadas sobre os 40 casos, reproduzindo todas as mensagens de chat de cada caso e salva relatório em `reports/<run_id>/`. O experimento atual compara tools internas do single com MCP stdio no multi e rotula essa diferença no manifesto. Ele é offline e não aprova G4 live. A arquitetura multi live permanece desativada até receber seus providers ADK e passar pelo protocolo com Gemini.
+`make eval-compare` executa três rodadas pareadas offline sobre os 40 casos,
+reproduz todas as mensagens de chat de cada caso e salva relatório em
+`reports/<run_id>/`. Compara tools internas do single com MCP stdio no multi e
+rotula essa diferença no manifesto; o resultado offline não aprova G4 live.
+`make eval-compare-live LIVE_CONFIRM=1 MAX_REQUESTS=246` executa o mesmo dataset
+com Gemini API (padrão) ou Vertex AI, usando o mesmo provider/modelo nas duas
+arquiteturas. Exige credencial, três rodadas e quota; consulte o protocolo em
+[quality gates](quality-gates.md#protocolo-live). O relatório preserva cada
+tentativa durante a execução. Revisão humana ainda é necessária.

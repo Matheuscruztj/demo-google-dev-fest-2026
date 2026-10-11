@@ -246,6 +246,29 @@ def test_adk_agent_constructs_with_only_read_tools(catalog):
     }
 
 
+def test_adk_agent_accepts_per_model_request_budget_callback(catalog):
+    pytest.importorskip("google.adk.agents")
+    from google.adk.agents import Agent
+    from google.genai import types
+
+    calls = []
+
+    def reserve_request(context, request):
+        calls.append((context, request))
+
+    adk_agent = build_adk_agent(
+        Agent,
+        types,
+        "gemini-2.5-flash",
+        DemoTools(catalog),
+        before_model_callback=reserve_request,
+    )
+
+    assert adk_agent.before_model_callback is reserve_request
+    assert reserve_request("context", "request") is None
+    assert calls == [("context", "request")]
+
+
 def test_local_mode_selects_ollama_provider(catalog):
     agent = make_agent(
         catalog,

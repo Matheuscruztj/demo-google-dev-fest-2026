@@ -81,20 +81,24 @@ def exercise_faq_contamination_fixture() -> dict[str, Any]:
 
 
 def single_agent_for_case(
-    sessions: list[Session], case: dict[str, Any], default_agent: SingleAgent
+    sessions: list[Session],
+    case: dict[str, Any],
+    default_agent: SingleAgent,
+    *,
+    failure_mode: str | None = None,
 ) -> SingleAgent:
     if case.get("category") not in {"tool_failure", "model_failure"}:
         return default_agent
     return SingleAgent(
         sessions,
         ControlledFailureProvider(str(case["category"])),
-        "offline",
+        failure_mode or default_agent.mode,
         "controlled-failure-fixture",
         timeout_seconds=default_agent.timeout_seconds,
     )
 
 
-def multi_failure_result(kind: str) -> AgentResult:
+def multi_failure_result(kind: str, *, mode: str = "offline") -> AgentResult:
     failure = (
         "Falha controlada de dependência no harness."
         if kind == "tool_failure"
@@ -105,11 +109,11 @@ def multi_failure_result(kind: str) -> AgentResult:
         [],
         [],
         None,
-        "offline:multi",
+        f"{mode}:multi",
         {
             "request_id": "controlled-failure-fixture",
-            "mode": "offline:multi",
-            "model": "offline",
+            "mode": f"{mode}:multi",
+            "model": "controlled-failure-fixture",
             "dataset_version": COORDINATOR_PROMPT_VERSION,
             "duration_ms": 0,
             "tool_calls": 0,

@@ -54,6 +54,7 @@ O Makefile é a interface local. Alguns alvos previstos abaixo entram apenas nas
 | `make compose-check` | Build de imagem, smoke HTTP, identidade sem privilégios e reinício com volume |
 | `make postgres-check` | PostgreSQL descartável local via Docker; adapter, seed, API, idempotência e disputa concorrente; não acessa cloud |
 | `make eval-compare` | Três rodadas offline intercaladas; single interno versus multi/MCP, com transporte identificado |
+| `make eval-compare-live LIVE_CONFIRM=1 MAX_REQUESTS=246 LIVE_PROVIDER=gemini-api LIVE_MODEL=gemini-2.5-flash` | Comparação pareada live; Gemini API ou Vertex AI, três rodadas intercaladas e teto total de chamadas |
 | `make report-metrics REPORT=reports/run/comparison.json` | Agrega sucesso, duração, chamadas, retries, consumo medido e custo por tarefa; gera JSON e dashboard HTML local |
 | `make check` | Todos os gates offline obrigatórios na wave atual |
 | `make pre-push` | `make check`, build instalável e smoke Compose offline; executado pelo hook pre-push e no GitHub |
@@ -123,6 +124,13 @@ O mapeamento usa as edições atuais do [OWASP GenAI LLM Top 10 2026](https://ge
 ### Protocolo live
 
 Executar três rodadas completas do dataset: **123 chamadas por arquitetura**, com estado limpo por caso. Comparação de duas arquiteturas usa 246 chamadas no total (123 por arquitetura). Isso é um protocolo de avaliação, não uma promessa de custo; cada execução pode chamar o modelo várias vezes.
+
+O runner pareado exige confirmação explícita, modelo/provider selecionados,
+credencial da Google AI API ou projeto Vertex AI via ADC, e teto total de pelo
+menos 246 chamadas planejadas. `MAX_REQUESTS` é reservado nos callbacks ADK de
+geração single e antes da rota multi; se o teto for atingido, tentativas
+restantes/falhas ficam no relatório e o resultado reprova. Retries internos do
+SDK ainda não são observáveis individualmente; veja [pendências](pendencias.md).
 
 Antes da execução, configurar teto de chamadas, tokens quando suportados e duração. Se não houver quota suficiente para completar as rodadas, o relatório é parcial e não aprova o gate. Nunca apagar tentativas que falharam nem repetir seletivamente só os casos desfavoráveis.
 

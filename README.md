@@ -135,7 +135,19 @@ Para executar evals live, ative o ambiente Python instalado por `make setup` e e
 make eval-live LIVE_CONFIRM=1
 ```
 
-Essa execução usa Gemini e pode consumir quota. A avaliação da arquitetura multi live ainda não está habilitada.
+Essa execução usa Gemini e pode consumir quota; `make eval-live` avalia o agente
+single. Para comparar single e coordenador/MCP em três rodadas pareadas, use o
+runner live após configurar a credencial correspondente. O comando exige
+confirmação e um teto mínimo de 246 chamadas lógicas para as duas arquiteturas:
+
+```bash
+make eval-compare-live LIVE_CONFIRM=1 MAX_REQUESTS=246 \
+  LIVE_PROVIDER=gemini-api LIVE_MODEL=gemini-2.5-flash
+```
+
+Use `LIVE_PROVIDER=vertex-ai` com ADC e `GOOGLE_CLOUD_PROJECT` para Vertex AI.
+O relatório intercalado fica em `reports/<run_id>/comparison.json`; falhas e
+tentativas ficam salvas durante a execução. A revisão humana continua necessária.
 
 ## Documentação
 

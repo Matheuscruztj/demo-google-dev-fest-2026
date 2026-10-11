@@ -27,7 +27,7 @@ sessão, sem job periódico. Persistência local não aprova G6 cloud.
 | ID | Prioridade | Estado | Pendência | Critério de conclusão |
 |---|---|---|---|---|
 | F01 | Alta | Parcial | O roteador do coordenador usa Gemini live no perfil Cloud validado; os especialistas continuam determinísticos e usam ferramentas locais/MCP, não modelos independentes. Validação real local com `qwen2.5:3b` em CPU roteou agenda sem fallback; o agente single excedeu 90 s ao responder FAQ e não produziu fonte validada. | Repetir single/Ollama na máquina de apresentação. Se especialistas baseados em LLM forem necessários, implementar providers, permissões, orçamento e histórico por especialista. Manter as ferramentas determinísticas como validação final. W4.3. |
-| F02 | Alta | Pendente | Runner pareado suporta somente offline. | Selecionar provider/modelo, controlar consumo e preservar tentativas das duas arquiteturas. Executar Gemini exige chave/quota. W4.6. |
+| F02 | Alta | Implementado local; live pendente | O runner pareado suporta offline e live com Gemini API ou Vertex AI, seleção de provider/modelo, preflight de confirmação/credenciais/teto total, intercalamento por caso e checkpoint atômico das tentativas single/multi. O teto conta callbacks de geração ADK e chamadas de rota multi antes da chamada ao SDK; retries internos do SDK ainda dependem de F06. | `scripts/evals/run_comparison.py`, `make eval-compare-live`; testes em `tests/unit/test_run_comparison.py` e `tests/unit/test_agent.py`. `make eval-compare` passou localmente; executar Gemini nas três rodadas e revisar os resultados ainda é necessário para aprovação G4. |
 | F03 | Alta | Concluído local | Single offline extrai e aplica nível solicitado, inclusive formas acentuadas e plurais; trilha é reconhecida por palavra inteira. | `app/agent.py: OfflineProvider.respond`; casos fixos em `tests/unit/test_agent.py`. |
 | F04 | Alta | Concluído local | Casos de agenda declaram trilha, nível, horário e quantidade; avaliador confere filtros, mínimo/exato e conflitos contra o catálogo. O pedido de três opções após 14h exige três resultados. | `app/evaluators.py`, `evals/cases.jsonl`. |
 | F05 | Alta | Concluído local | Cada caso usa SQLite isolado e executa passos por HTTP com cookie/origem; cobre prévia abandonada sem confirmação, token inválido, capacidade esgotada, confirmação e replay idempotente. Estado persistido é lido ao final. | `app/evaluators.py: execute_case_state`, `scripts/evals/run_evals.py`, `scripts/evals/run_comparison.py`, casos `adv-duplicate` e `adv-last-seat`. O browser real continua coberto pelo gate E2E, fora do replay de eval. |
@@ -57,9 +57,9 @@ o perfil continua opcional e lexical segue como padrão.
 
 ## Validações e materiais restantes
 
-- Smoke remoto single e multi/live foi aprovado em 10/10/2026; comparação
-  quantitativa pareada continua pendente porque o runner de comparação ainda
-  é offline e requer orçamento/quota específicos para Gemini.
+- Smoke remoto single e multi/live foi aprovado em 10/10/2026; a comparação
+  quantitativa pareada live continua pendente até executar o novo runner com
+  confirmação, credenciais e quota para as duas arquiteturas.
 - Ollama real ainda precisa ser validado e medido na máquina de apresentação;
   o smoke local desta máquina teve sucesso no roteador multi e timeout no agente
   single. CUDA é opcional.
@@ -91,6 +91,27 @@ alterado ou removido.
 Os gates locais e o teste de Ollama não substituem a comparação Gemini pareada,
 o controle dos retries internos do SDK Gemini, a medição na máquina da
 apresentação ou a gravação de contingência.
+
+## Comparador pareado live (F02)
+
+O runner aceita `gemini-api` ou `vertex-ai` e aplica o mesmo modelo às
+arquiteturas single e coordenador/MCP. Exige três rodadas, confirmação explícita
+e teto mínimo de 246 chamadas planejadas (123 por arquitetura). As execuções são
+intercaladas por caso e o relatório JSON é checkpointado atomicamente antes e
+depois de cada tentativa, incluindo falhas e traces. O teto é reservado antes
+de cada chamada observável pelo ADK/coordenador; retries internos do SDK que não
+passam por esses pontos permanecem em F06.
+
+Validação local: preflight recusou o teto 245 sem instanciar providers; testes
+verificaram cálculo de chamadas, credenciais, confirmação, limite de runtime e
+checkpoint. `make eval-compare` passou 40/40 casos por arquitetura em três
+rodadas sem Gemini. O live continua sem execução/autorização e não está aprovado
+em G4. Para repetir:
+
+```bash
+make eval-compare-live LIVE_CONFIRM=1 MAX_REQUESTS=246 \
+  LIVE_PROVIDER=gemini-api LIVE_MODEL=gemini-2.5-flash
+```
 
 ## Validação das mudanças de sessões e F05–F09
 
