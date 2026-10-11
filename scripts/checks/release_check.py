@@ -10,7 +10,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from scripts.checks.candidate import ROOT, candidate_digest
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
+from scripts.checks.candidate import candidate_digest  # noqa: E402
 
 
 def read_report(path: Path) -> dict[str, Any]:
