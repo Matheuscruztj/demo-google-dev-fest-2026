@@ -102,13 +102,13 @@ operacionais ainda não produzidos neste ambiente.
 
 ## Comparador pareado local (F02)
 
-O runner aceita `gemini-api` ou `vertex-ai` e aplica o mesmo modelo às
-arquiteturas single e coordenador/MCP. Exige três rodadas, confirmação explícita
-e teto mínimo de 246 chamadas planejadas (123 por arquitetura). As execuções são
-intercaladas por caso e o relatório JSON é checkpointado atomicamente antes e
-depois de cada tentativa, incluindo falhas e traces. O teto é reservado antes
-de cada chamada observável pelo ADK/coordenador; retries internos do SDK que não
-passam por esses pontos permanecem em F06.
+O runner suporta modos offline, local e live. No modo local, exige três rodadas,
+teto mínimo de 246 chamadas planejadas (123 por arquitetura) e intercalamento
+por caso. O relatório JSON é checkpointado atomicamente antes e depois de cada
+tentativa, incluindo falhas e traces. O callback reserva o teto antes das
+chamadas Ollama observáveis. Neste dataset, as intenções conhecidas usam
+especialistas determinísticos e não chamam o modelo; o relatório registra essa
+contagem como zero.
 
 Validação local: preflight recusou o teto 245; testes verificam cálculo de
 chamadas, credenciais, confirmação, limite de runtime, callbacks e checkpoint.
