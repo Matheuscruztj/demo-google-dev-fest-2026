@@ -109,6 +109,21 @@ def validate_live_options(
     return expected // 2, configured
 
 
+def validate_local_options(
+    *, rounds: int, max_requests: int | None, cases: list[dict[str, Any]]
+) -> tuple[int, int]:
+    if rounds != 3:
+        raise ValueError("Comparação local pareada exige exatamente três rodadas.")
+    expected = planned_requests(cases) * rounds * 2
+    configured = expected if max_requests is None else max_requests
+    if configured < expected:
+        raise ValueError(
+            f"Teto local insuficiente: são necessárias pelo menos {expected} "
+            "chamadas planejadas para completar as duas arquiteturas."
+        )
+    return expected // 2, configured
+
+
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -127,6 +142,8 @@ async def run(args: argparse.Namespace) -> int:
             api_key=api_key,
             google_project=os.getenv("GOOGLE_CLOUD_PROJECT"),
             google_location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
+            ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
+            ollama_context_length=int(os.getenv("OLLAMA_CONTEXT_LENGTH", "4096")),
         )
 
 
@@ -142,11 +159,13 @@ async def compare(
     api_key: str | None = None,
     google_project: str | None = None,
     google_location: str = "us-central1",
+    ollama_base_url: str = "http://127.0.0.1:11434",
+    ollama_context_length: int = 4096,
 ) -> int:
     if not 1 <= rounds <= 3:
         raise ValueError("--rounds deve estar entre 1 e 3.")
-    if mode not in {"offline", "live"}:
-        raise ValueError("--mode aceita offline ou live.")
+    if mode not in {"offline", "live", "local"}:
+        raise ValueError("--mode aceita offline, local ou live.")
     dataset = ROOT / "evals/cases.jsonl"
     cases = load_cases(dataset)
     sessions = [Session.model_validate(item) for item in load_session_seed()]
@@ -189,6 +208,31 @@ async def compare(
             google_location=google_location,
             request_budget=budget,
         )
+    elif mode == "local":
+        planned_per_architecture, max_requests = validate_local_options(
+            rounds=rounds, max_requests=max_requests, cases=cases
+        )
+        assert max_requests is not None
+        budget = RequestBudget(max_requests)
+        single = make_agent(
+            sessions,
+            "local",
+            model,
+            None,
+            ollama_base_url=ollama_base_url,
+            ollama_model=model,
+            ollama_context_length=ollama_context_length,
+            before_provider_call_callback=lambda: budget.reserve("single"),
+        )
+        multi = BudgetedCoordinator(
+            sessions,
+            mode="local",
+            model=model,
+            use_mcp=True,
+            database=database,
+            ollama_base_url=ollama_base_url,
+            request_budget=budget,
+        )
     else:
         budget = None
         max_requests = None
@@ -201,15 +245,15 @@ async def compare(
         "candidate_sha256": candidate_digest(),
         "created_at": datetime.now(UTC).isoformat(),
         "mode": f"{mode}-paired",
-        "provider": provider if mode == "live" else "offline",
-        "model": model if mode == "live" else "offline",
+        "provider": provider if mode == "live" else "ollama" if mode == "local" else "offline",
+        "model": model if mode in {"live", "local"} else "offline",
         "live_authorized": mode == "live" and confirm_live,
         "max_requests_configured": max_requests,
         "planned_requests_per_architecture": planned_per_architecture,
         "planned_requests_total": planned_per_architecture * 2,
         "request_budget_scope": (
             "ADK before-model callbacks and coordinator routes before SDK-internal retries"
-            if mode == "live"
+            if mode in {"live", "local"}
             else "offline"
         ),
         "dataset_sha256": digest(dataset),
@@ -218,14 +262,22 @@ async def compare(
             "single": {
                 "prompt_version": PROMPT_VERSION,
                 "transport": "internal",
-                "provider": provider if mode == "live" else "offline",
-                "model": model if mode == "live" else "offline",
+                "provider": provider
+                if mode == "live"
+                else "ollama"
+                if mode == "local"
+                else "offline",
+                "model": model if mode in {"live", "local"} else "offline",
             },
             "multi": {
                 "prompt_version": COORDINATOR_PROMPT_VERSION,
                 "transport": "MCP stdio",
-                "provider": provider if mode == "live" else "offline",
-                "model": model if mode == "live" else "offline",
+                "provider": provider
+                if mode == "live"
+                else "ollama"
+                if mode == "local"
+                else "offline",
+                "model": model if mode in {"live", "local"} else "offline",
             },
         },
         "rounds_requested": rounds,
@@ -289,7 +341,7 @@ async def compare(
                             if budget is not None and budget.started > requests_before
                             else "budget_exhausted"
                             if budget is not None and budget.exhaustions > exhaustions_before
-                            else "offline"
+                            else mode
                         ),
                         "evaluation": verdict,
                     }
@@ -347,7 +399,9 @@ async def compare(
             "o candidato/provider/modelo registrados."
             if mode == "live"
             else (
-                "Alegações livres exigem revisão humana; resultado offline não aprova "
+                "Avaliação local sem consumo de API; alegações livres exigem revisão humana."
+                if mode == "local"
+                else "Alegações livres exigem revisão humana; resultado offline não aprova "
                 "qualidade live G4."
             )
         ),
@@ -369,8 +423,10 @@ async def compare(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=["offline", "live"], default="offline")
-    parser.add_argument("--provider", choices=sorted(LIVE_PROVIDERS), default="gemini-api")
+    parser.add_argument("--mode", choices=["offline", "local", "live"], default="offline")
+    parser.add_argument(
+        "--provider", choices=[*sorted(LIVE_PROVIDERS), "ollama"], default="gemini-api"
+    )
     parser.add_argument("--model", default=os.getenv("EVENTOPS_AGENT_MODEL", "gemini-3.8-flash"))
     parser.add_argument("--rounds", type=int, default=1)
     parser.add_argument("--max-requests", type=int)

@@ -145,6 +145,11 @@ make eval-compare-live LIVE_CONFIRM=1 MAX_REQUESTS=246 \
   LIVE_PROVIDER=gemini-api LIVE_MODEL=gemini-3.8-flash
 ```
 
+Para comparar localmente single e coordenador/MCP, sem API externa, use
+`make eval-compare-local MAX_REQUESTS=246 LOCAL_MODEL=qwen3:8b`. Intenções
+conhecidas de agenda e FAQ usam catálogo e regras locais verificáveis; no agente
+single, Ollama fica disponível para pedidos fora dessas rotas determinísticas.
+
 Use `LIVE_PROVIDER=vertex-ai` com ADC e `GOOGLE_CLOUD_PROJECT` para Vertex AI.
 O relatório intercalado fica em `reports/<run_id>/comparison.json`; falhas e
 tentativas ficam salvas durante a execução. A revisão humana continua necessária.

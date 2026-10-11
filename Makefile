@@ -1,6 +1,6 @@
 PYTHON ?= python
 
-.PHONY: setup run lint typecheck test e2e build compose-check postgres-check check pre-push release-check compose-up compose-down compose-logs eval-offline eval-live eval-compare eval-compare-live eval-rag report-metrics
+.PHONY: setup run lint typecheck test e2e build compose-check postgres-check check pre-push release-check compose-up compose-down compose-logs eval-offline eval-live eval-compare eval-compare-local eval-compare-live eval-rag report-metrics
 
 setup:
 	$(PYTHON) -c 'import sys; assert sys.version_info[:2] == (3, 11), "Use Python 3.11"'
@@ -57,6 +57,9 @@ eval-live:
 
 eval-compare:
 	$(PYTHON) scripts/evals/run_comparison.py --rounds 3
+
+eval-compare-local:
+	$(PYTHON) scripts/evals/run_comparison.py --mode local --rounds 3 --provider ollama --model "$(if $(LOCAL_MODEL),$(LOCAL_MODEL),qwen3:8b)" --max-requests "$(if $(MAX_REQUESTS),$(MAX_REQUESTS),246)"
 
 eval-compare-live:
 	$(PYTHON) scripts/evals/run_comparison.py --mode live --rounds 3 --provider "$(if $(LIVE_PROVIDER),$(LIVE_PROVIDER),gemini-api)" --model "$(if $(LIVE_MODEL),$(LIVE_MODEL),gemini-3.8-flash)" --max-requests "$(if $(MAX_REQUESTS),$(MAX_REQUESTS),246)" $(if $(LIVE_CONFIRM),--confirm-live)

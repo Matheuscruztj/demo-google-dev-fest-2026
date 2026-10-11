@@ -8,6 +8,7 @@ from scripts.evals.run_comparison import (
     checkpoint_report,
     planned_requests,
     validate_live_options,
+    validate_local_options,
 )
 
 
@@ -78,6 +79,18 @@ def test_live_preflight_requires_vertex_project_for_adc():
             google_project=None,
             cases=[{"interaction": [{"channel": "chat"}]} for _ in range(41)],
         )
+
+
+def test_local_preflight_requires_full_three_round_pair_and_request_cap():
+    cases = [{"interaction": [{"channel": "chat"}]} for _ in range(41)]
+
+    assert validate_local_options(rounds=3, max_requests=246, cases=cases) == (123, 246)
+
+    with pytest.raises(ValueError, match="Teto local insuficiente"):
+        validate_local_options(rounds=3, max_requests=245, cases=cases)
+
+    with pytest.raises(ValueError, match="três rodadas"):
+        validate_local_options(rounds=1, max_requests=246, cases=cases)
 
 
 def test_request_budget_caps_and_counts_each_architecture():
