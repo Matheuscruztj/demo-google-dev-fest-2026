@@ -27,12 +27,12 @@ sessão, sem job periódico. Persistência local não aprova G6 cloud.
 | ID | Prioridade | Estado | Pendência | Critério de conclusão |
 |---|---|---|---|---|
 | F01 | Alta | Concluído local | Perguntas conhecidas sobre agenda, políticas e segurança usam ferramentas determinísticas com catálogo/fontes; single local seleciona IDs válidos, filtros e conflitos sem geração livre. Qwen3:8b permanece como fallback local para pedidos fora das intenções suportadas. GPU e runtime Ollama validados. | Verificado em `app/agent.py`, `app/agents/coordinator.py`; 120/120 avaliações por arquitetura no comparativo local guardado, três rodadas. O modelo cru sem guardas falhou vários casos adversariais; não é usado para decidir fatos, IDs ou ações cobertos pelas ferramentas. |
-| F02 | Concluído local; avaliação Gemini encerrada no escopo | Comparador pareado oferece offline, local e live; modo local exige três rodadas, teto planejado, checkpoint atômico e intercala single/MCP. Comparação local guardada passou 120/120 tentativas por arquitetura. A validação Gemini externa retornou 402 por créditos e foi encerrada por decisão de escopo; isso não é aprovação G4 live. | `scripts/evals/run_comparison.py`, `make eval-compare`, `make eval-compare-local`; evidência `reports/20261011T011540Z-d6dd2df7/comparison.json`. Gemini não será executado neste ciclo. |
+| F02 | Concluído local; avaliação Gemini encerrada no escopo | Comparador pareado oferece offline, local e live; modo local exige três rodadas, teto planejado, checkpoint atômico e intercala single/MCP. Comparação local guardada passou 120/120 tentativas por arquitetura. A validação Gemini externa retornou 402 por créditos e foi encerrada por decisão de escopo; isso não é aprovação G4 live. | `scripts/evals/run_comparison.py`, `make eval-compare`, `make eval-compare-local`; evidência `reports/20261011T011702Z-812a56e0/comparison.json`. Gemini não será executado neste ciclo. |
 | F03 | Alta | Concluído local | Single offline extrai e aplica nível solicitado, inclusive formas acentuadas e plurais; trilha é reconhecida por palavra inteira. | `app/agent.py: OfflineProvider.respond`; casos fixos em `tests/unit/test_agent.py`. |
 | F04 | Alta | Concluído local | Casos de agenda declaram trilha, nível, horário e quantidade; avaliador confere filtros, mínimo/exato e conflitos contra o catálogo. O pedido de três opções após 14h exige três resultados. | `app/evaluators.py`, `evals/cases.jsonl`. |
 | F05 | Alta | Concluído local | Cada caso usa SQLite isolado e executa passos por HTTP com cookie/origem; cobre prévia abandonada sem confirmação, token inválido, capacidade esgotada, confirmação e replay idempotente. Estado persistido é lido ao final. | `app/evaluators.py: execute_case_state`, `scripts/evals/run_evals.py`, `scripts/evals/run_comparison.py`, casos `adv-duplicate` e `adv-last-seat`. O browser real continua coberto pelo gate E2E, fora do replay de eval. |
 | F06 | Concluído local; retry Gemini fora do escopo | Breaker local compartilhado protege single/Ollama; breaker MCP protege multi; harness valida timeout e saída abrupta; runner limita chamadas locais observáveis antes do Ollama. | `app/agent.py`, `app/main.py`, `app/mcp_client.py`, `evals/harness.py`, `scripts/evals/run_comparison.py`. Retries internos do SDK Gemini só se aplicam ao modo live, encerrado neste ciclo por decisão de escopo. |
-| F07 | Média | Concluído local | Tokens medidos pelo Ollama/ADK são agregados por chamada/retry; métricas mostram cobertura parcial, sucesso, duração, chamadas e custo por tarefa. Tabela datada identifica custo zero offline e mantém custo de compute local/desconhecido como indisponível. Dashboard HTML local é gerado junto ao JSON. | `app/agent.py`, `app/data/model_prices.json`, `app/metrics.py`, `scripts/evals/report_metrics.py`. Preço Gemini será preenchido quando a integração por API for adaptada. |
+| F07 | Média | Concluído local | Tokens medidos por Ollama/ADK são agregados por chamada/retry; métricas mostram cobertura, sucesso, duração, chamadas e custo conhecido por tarefa. Dashboard HTML local acompanha o JSON. Custo de compute local permanece indisponível e fora do escopo. | `app/agent.py`, `app/data/model_prices.json`, `app/metrics.py`, `scripts/evals/report_metrics.py`. Preço live Gemini está fora do ciclo local. |
 | F08 | Média | Concluído local | Metadados estruturados de versão, atualização, validade, status, conflito e confiança são validados e chegam às citações. Retrieval exclui regras futuras, expiradas, conflitantes e não confiáveis; fixture contaminada isolada exige abstenção. | `app/data/faq_metadata.json`, `app/data_validation.py`, `app/faq.py`, `evals/harness.py`, `tests/fixtures/adversarial/faq_poisoned_chunk.json`. A fixture não entra no catálogo publicado. |
 | F09 | Média | Concluído local | `make release-check` executa gates offline, build e Compose; compara hash do candidato em eval/build/imagem, dataset/catálogo, wheel/sdist e digest Docker, falhando com evidência ausente ou divergente. | `scripts/checks/candidate.py`, `scripts/checks/release_check.py`, `scripts/checks/check_build.py`, `scripts/checks/check_compose.py`, `Makefile`. Gate live continua separado e exige execução autorizada. |
 
@@ -62,8 +62,8 @@ o perfil continua opcional e lexical segue como padrão.
   a API indicar créditos esgotados.
 - Ollama/CUDA e qualidade funcional das rotas locais foram validados neste
   ambiente; falta repetir na máquina de apresentação.
-- A validação local completa de `make pre-push` passou para o candidato verificado
-  na revisão de 10/10; relatórios antigos não aprovam mudanças futuras de código.
+- `make pre-push` passou em 11/10/2026 para o commit `718ccf1`; relatórios
+  avaliam somente o candidato registrado em cada execução.
 - A2A é bônus. Comparar single/multi ambos via MCP é opcional para isolar a
   orquestração. Gravação de contingência ainda não foi produzida.
 - Estimativa de custo de compute/energia local (R08) foi explicitamente deixada
@@ -73,12 +73,12 @@ o perfil continua opcional e lexical segue como padrão.
 
 ## Validação local desta revisão
 
-Em 10/10/2026 (horário de Fortaleza), `make pre-push` passou: Ruff, formatação,
-ESLint, mypy, 140 testes unitários/integração, cobertura mínima de branches,
-três testes E2E, 40/40 evals offline, build/instalação isolada do pacote e smoke
-Docker Compose (health, catálogo/MCP, histórico e reinício). O Docker foi
-removido pelo próprio smoke ao terminar. O processo pytest usou Python 3.14.6;
-o container da aplicação foi construído com Python 3.11.
+Em 11/10/2026, `make pre-push` passou no commit `718ccf1`: Ruff, formatação,
+ESLint, mypy, 153 testes unitários/integração, cobertura mínima de branches,
+três testes E2E, eval offline, build/instalação isolada do pacote e smoke Docker
+Compose (health, catálogo/MCP, histórico e reinício). O Docker foi removido pelo
+próprio smoke ao terminar. Pytest usou Python 3.14.6; a imagem foi construída
+com Python 3.11.
 
 O Ollama já ativo em container respondeu em `127.0.0.1:11434`; preservamos o
 container e baixamos `qwen2.5:3b`. Também validamos `qwen3:8b`, carregado 100% na
@@ -96,11 +96,11 @@ chamadas ao modelo: intents cobertas foram encaminhadas pelas regras/tools
 locais. `make eval-compare` offline também passou anteriormente 120/120 por
 arquitetura. O relatório contém escopo, tentativas e hashes do candidato.
 
-Os gates locais e o teste de Ollama não substituem a comparação Gemini pareada,
-o controle dos retries internos do SDK Gemini, a medição na máquina da
-apresentação ou a gravação de contingência.
+Os gates locais não validam Gemini live, encerrado por decisão de escopo. A
+repetição na máquina de apresentação e a gravação de contingência são materiais
+operacionais ainda não produzidos neste ambiente.
 
-## Comparador pareado live (F02)
+## Comparador pareado local (F02)
 
 O runner aceita `gemini-api` ou `vertex-ai` e aplica o mesmo modelo às
 arquiteturas single e coordenador/MCP. Exige três rodadas, confirmação explícita
@@ -112,7 +112,6 @@ passam por esses pontos permanecem em F06.
 
 Validação local: preflight recusou o teto 245; testes verificam cálculo de
 chamadas, credenciais, confirmação, limite de runtime, callbacks e checkpoint.
-`make eval-compare` passou 120/120 por arquitetura. O novo
 `make eval-compare-local` passou 120/120 por arquitetura, três rodadas; intents
 conhecidas usam o roteamento verificado e não gastaram chamadas Ollama. Isso
 conclui a implementação e a validação dentro do escopo exclusivamente local.
@@ -121,8 +120,7 @@ créditos pré-pagos esgotados. Conforme decisão de escopo, a comparação Gemi
 foi encerrada sem execução e sem aprovação G4 live.
 
 ```bash
-make eval-compare-live LIVE_CONFIRM=1 MAX_REQUESTS=246 \
-  LIVE_PROVIDER=gemini-api LIVE_MODEL=gemini-3.8-flash
+make eval-compare-local MAX_REQUESTS=246 LOCAL_MODEL=qwen3:8b
 ```
 
 ## Validação das mudanças de sessões e F05–F09
