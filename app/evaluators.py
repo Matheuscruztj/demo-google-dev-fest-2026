@@ -259,7 +259,7 @@ def execute_case_state(case: dict[str, Any], result: AgentResult, sessions: list
                 "EVENTOPS_DATABASE": str(database),
                 "EVENTOPS_DATABASE_URL": "",
                 "EVENTOPS_SEED_CATALOG": "true",
-                "EVENTOPS_AGENT_MODEL": "gemini-2.5-flash",
+                "EVENTOPS_AGENT_MODEL": "gemini-3.8-flash",
                 "EVENTOPS_AGENT_TIMEOUT_SECONDS": "12",
                 "EVENTOPS_ALLOWED_ORIGINS": "",
                 "EVENTOPS_COOKIE_SECURE": "false",

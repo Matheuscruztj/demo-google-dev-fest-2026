@@ -212,7 +212,7 @@ async def run(args: argparse.Namespace) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["offline", "replay", "live"], default="offline")
-    parser.add_argument("--model", default=os.getenv("EVENTOPS_AGENT_MODEL", "gemini-2.5-flash"))
+    parser.add_argument("--model", default=os.getenv("EVENTOPS_AGENT_MODEL", "gemini-3.8-flash"))
     parser.add_argument("--rounds", type=int, default=1)
     parser.add_argument("--max-requests", type=int, default=30)
     parser.add_argument("--confirm-live", action="store_true")

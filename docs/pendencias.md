@@ -105,12 +105,14 @@ passam por esses pontos permanecem em F06.
 Validação local: preflight recusou o teto 245 sem instanciar providers; testes
 verificaram cálculo de chamadas, credenciais, confirmação, limite de runtime e
 checkpoint. `make eval-compare` passou 40/40 casos por arquitetura em três
-rodadas sem Gemini. O live continua sem execução/autorização e não está aprovado
-em G4. Para repetir:
+rodadas sem Gemini. Em 2026-10-11, a chave fornecida foi aceita pela API, mas a
+chamada de teste ao `gemini-3.8-flash` retornou 402 por créditos pré-pagos
+esgotados; o lote live não foi iniciado. O live continua sem validação e não
+está aprovado em G4. Para repetir após habilitar créditos:
 
 ```bash
 make eval-compare-live LIVE_CONFIRM=1 MAX_REQUESTS=246 \
-  LIVE_PROVIDER=gemini-api LIVE_MODEL=gemini-2.5-flash
+  LIVE_PROVIDER=gemini-api LIVE_MODEL=gemini-3.8-flash
 ```
 
 ## Validação das mudanças de sessões e F05–F09

@@ -54,7 +54,7 @@ O Makefile é a interface local. Alguns alvos previstos abaixo entram apenas nas
 | `make compose-check` | Build de imagem, smoke HTTP, identidade sem privilégios e reinício com volume |
 | `make postgres-check` | PostgreSQL descartável local via Docker; adapter, seed, API, idempotência e disputa concorrente; não acessa cloud |
 | `make eval-compare` | Três rodadas offline intercaladas; single interno versus multi/MCP, com transporte identificado |
-| `make eval-compare-live LIVE_CONFIRM=1 MAX_REQUESTS=246 LIVE_PROVIDER=gemini-api LIVE_MODEL=gemini-2.5-flash` | Comparação pareada live; Gemini API ou Vertex AI, três rodadas intercaladas e teto total de chamadas |
+| `make eval-compare-live LIVE_CONFIRM=1 MAX_REQUESTS=246 LIVE_PROVIDER=gemini-api LIVE_MODEL=gemini-3.8-flash` | Comparação pareada live; Gemini API ou Vertex AI, três rodadas intercaladas e teto total de chamadas |
 | `make report-metrics REPORT=reports/run/comparison.json` | Agrega sucesso, duração, chamadas, retries, consumo medido e custo por tarefa; gera JSON e dashboard HTML local |
 | `make check` | Todos os gates offline obrigatórios na wave atual |
 | `make pre-push` | `make check`, build instalável e smoke Compose offline; executado pelo hook pre-push e no GitHub |

@@ -26,7 +26,7 @@ class Settings:
     google_vertex_ai: bool = False
     google_cloud_project: str | None = None
     google_cloud_location: str = "us-central1"
-    agent_model: str = "gemini-2.5-flash"
+    agent_model: str = "gemini-3.8-flash"
     agent_timeout_seconds: int = 12
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_embedding_base_url: str = "http://127.0.0.1:11434"
@@ -116,7 +116,7 @@ class Settings:
         demo_user = os.getenv("EVENTOPS_DEMO_USER", "participante-demo").strip()
         if not demo_user or len(demo_user) > 80:
             raise ValueError("EVENTOPS_DEMO_USER deve conter de 1 a 80 caracteres.")
-        model = os.getenv("EVENTOPS_AGENT_MODEL", "gemini-2.5-flash").strip()
+        model = os.getenv("EVENTOPS_AGENT_MODEL", "gemini-3.8-flash").strip()
         if not model or not re.fullmatch(r"[A-Za-z0-9._/-]{1,128}", model):
             raise ValueError("EVENTOPS_AGENT_MODEL contém caracteres inválidos.")
         secure_text = os.getenv("EVENTOPS_COOKIE_SECURE", "false").strip().lower()

@@ -136,7 +136,7 @@ async def compare(
     *,
     mode: str = "offline",
     provider: str = "gemini-api",
-    model: str = "gemini-2.5-flash",
+    model: str = "gemini-3.8-flash",
     max_requests: int | None = None,
     confirm_live: bool = False,
     api_key: str | None = None,
@@ -371,7 +371,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["offline", "live"], default="offline")
     parser.add_argument("--provider", choices=sorted(LIVE_PROVIDERS), default="gemini-api")
-    parser.add_argument("--model", default=os.getenv("EVENTOPS_AGENT_MODEL", "gemini-2.5-flash"))
+    parser.add_argument("--model", default=os.getenv("EVENTOPS_AGENT_MODEL", "gemini-3.8-flash"))
     parser.add_argument("--rounds", type=int, default=1)
     parser.add_argument("--max-requests", type=int)
     parser.add_argument("--confirm-live", action="store_true")

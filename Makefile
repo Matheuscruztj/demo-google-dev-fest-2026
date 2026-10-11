@@ -59,7 +59,7 @@ eval-compare:
 	$(PYTHON) scripts/evals/run_comparison.py --rounds 3
 
 eval-compare-live:
-	$(PYTHON) scripts/evals/run_comparison.py --mode live --rounds 3 --provider "$(if $(LIVE_PROVIDER),$(LIVE_PROVIDER),gemini-api)" --model "$(if $(LIVE_MODEL),$(LIVE_MODEL),gemini-2.5-flash)" --max-requests "$(if $(MAX_REQUESTS),$(MAX_REQUESTS),246)" $(if $(LIVE_CONFIRM),--confirm-live)
+	$(PYTHON) scripts/evals/run_comparison.py --mode live --rounds 3 --provider "$(if $(LIVE_PROVIDER),$(LIVE_PROVIDER),gemini-api)" --model "$(if $(LIVE_MODEL),$(LIVE_MODEL),gemini-3.8-flash)" --max-requests "$(if $(MAX_REQUESTS),$(MAX_REQUESTS),246)" $(if $(LIVE_CONFIRM),--confirm-live)
 
 eval-rag:
 	$(PYTHON) scripts/evals/eval_rag.py --mode "$${RAG_EVAL_MODE:-lexical}"

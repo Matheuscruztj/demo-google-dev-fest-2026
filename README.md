@@ -142,7 +142,7 @@ confirmação e um teto mínimo de 246 chamadas lógicas para as duas arquitetur
 
 ```bash
 make eval-compare-live LIVE_CONFIRM=1 MAX_REQUESTS=246 \
-  LIVE_PROVIDER=gemini-api LIVE_MODEL=gemini-2.5-flash
+  LIVE_PROVIDER=gemini-api LIVE_MODEL=gemini-3.8-flash
 ```
 
 Use `LIVE_PROVIDER=vertex-ai` com ADC e `GOOGLE_CLOUD_PROJECT` para Vertex AI.
