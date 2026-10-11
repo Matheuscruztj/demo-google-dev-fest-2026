@@ -26,7 +26,7 @@ sessão, sem job periódico. Persistência local não aprova G6 cloud.
 
 | ID | Prioridade | Estado | Pendência | Critério de conclusão |
 |---|---|---|---|---|
-| F01 | Alta | Parcial | O roteador do coordenador usa Gemini live no perfil Cloud validado; os especialistas continuam determinísticos e usam ferramentas locais/MCP, não modelos independentes. O provider local Ollama para o coordenador não foi validado nesta sessão. | Se especialistas baseados em LLM forem necessários, implementar providers, permissões, orçamento e histórico por especialista. Manter as ferramentas determinísticas como validação final. W4.3. |
+| F01 | Alta | Parcial | O roteador do coordenador usa Gemini live no perfil Cloud validado; os especialistas continuam determinísticos e usam ferramentas locais/MCP, não modelos independentes. Validação real local com `qwen2.5:3b` em CPU roteou agenda sem fallback; o agente single excedeu 90 s ao responder FAQ e não produziu fonte validada. | Repetir single/Ollama na máquina de apresentação. Se especialistas baseados em LLM forem necessários, implementar providers, permissões, orçamento e histórico por especialista. Manter as ferramentas determinísticas como validação final. W4.3. |
 | F02 | Alta | Pendente | Runner pareado suporta somente offline. | Selecionar provider/modelo, controlar consumo e preservar tentativas das duas arquiteturas. Executar Gemini exige chave/quota. W4.6. |
 | F03 | Alta | Concluído local | Single offline extrai e aplica nível solicitado, inclusive formas acentuadas e plurais; trilha é reconhecida por palavra inteira. | `app/agent.py: OfflineProvider.respond`; casos fixos em `tests/unit/test_agent.py`. |
 | F04 | Alta | Concluído local | Casos de agenda declaram trilha, nível, horário e quantidade; avaliador confere filtros, mínimo/exato e conflitos contra o catálogo. O pedido de três opções após 14h exige três resultados. | `app/evaluators.py`, `evals/cases.jsonl`. |
@@ -60,14 +60,37 @@ o perfil continua opcional e lexical segue como padrão.
 - Smoke remoto single e multi/live foi aprovado em 10/10/2026; comparação
   quantitativa pareada continua pendente porque o runner de comparação ainda
   é offline e requer orçamento/quota específicos para Gemini.
-- Ollama real CPU/GPU precisa ser executado e medido na máquina de apresentação;
-  contratos não substituem essa execução. CUDA é opcional.
-- `make pre-push` completo deve ser repetido para cada candidato relevante;
-  relatórios antigos não aprovam mudanças novas.
+- Ollama real ainda precisa ser validado e medido na máquina de apresentação;
+  o smoke local desta máquina teve sucesso no roteador multi e timeout no agente
+  single. CUDA é opcional.
+- A validação local completa de `make pre-push` passou para o candidato verificado
+  nesta revisão; relatórios antigos não aprovam mudanças futuras de código.
 - A2A é bônus. Comparar single/multi ambos via MCP é opcional para isolar a
   orquestração. Gravação de contingência ainda não foi produzida.
+- Estimativa de custo de compute/energia local (R08) foi explicitamente deixada
+  fora deste ciclo.
 - Dataset atual: 40 casos, 20 normais e 20 adversariais. O bloqueio histórico de
   Playwright não representa a validação aprovada em 2026-10-09.
+
+## Validação local desta revisão
+
+Em 10/10/2026 (horário de Fortaleza), `make pre-push` passou: Ruff, formatação,
+ESLint, mypy, 140 testes unitários/integração, cobertura mínima de branches,
+três testes E2E, 40/40 evals offline, build/instalação isolada do pacote e smoke
+Docker Compose (health, catálogo/MCP, histórico e reinício). O Docker foi
+removido pelo próprio smoke ao terminar. O processo pytest usou Python 3.14.6;
+o container da aplicação foi construído com Python 3.11.
+
+O smoke real do Ollama usou o container já existente `ollama/ollama:0.12.6` e o
+modelo `qwen2.5:3b` em CPU. O roteador do coordenador multi completou em cerca de
+6 s, selecionou sessões e não usou fallback. O agente single excedeu o timeout
+de 90 s numa pergunta de acessibilidade, sem citar fonte; portanto, o provider
+local single não está aprovado por esta execução. Nenhum volume existente foi
+alterado ou removido.
+
+Os gates locais e o teste de Ollama não substituem a comparação Gemini pareada,
+o controle dos retries internos do SDK Gemini, a medição na máquina da
+apresentação ou a gravação de contingência.
 
 ## Validação das mudanças de sessões e F05–F09
 
